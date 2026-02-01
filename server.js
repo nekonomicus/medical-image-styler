@@ -29,8 +29,8 @@ const modelConfig = {
   generationConfig: {
     temperature: 1,
     responseModalities: ['image', 'text'],
-    imageGenerationConfig: {
-      outputImageResolution: '4K'
+    imageConfig: {
+      imageSize: '4K'
     }
   }
 };
