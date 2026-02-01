@@ -23,8 +23,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
 // Model configuration matching user's settings
+// Using Gemini 3 Pro Image Preview as specified
 const modelConfig = {
-  model: 'gemini-2.0-flash-exp-image-generation',
+  model: 'gemini-3-pro-image-preview',
   generationConfig: {
     temperature: 1,
     responseModalities: ['image', 'text'],
