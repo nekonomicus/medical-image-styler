@@ -337,6 +337,10 @@ h3 {
   color: #60a5fa;
 }
 
+.result-card .card-type.photo-to-sketch {
+  color: #34d399;
+}
+
 .result-card .card-type.annotation-removal {
   color: #a78bfa;
 }

@@ -362,6 +362,92 @@ Generate the clean image without any annotations.`;
   }
 });
 
+// Photo to Sketch - faithful reproduction in reference style (no annotation handling)
+app.post('/api/batch-photo-to-sketch', upload.fields([
+  { name: 'reference', maxCount: 1 },
+  { name: 'photos', maxCount: 50 }
+]), async (req, res) => {
+  try {
+    if (!req.files.reference || !req.files.photos) {
+      return res.status(400).json({ error: 'Reference and photos required' });
+    }
+
+    const refFile = req.files.reference[0];
+    const photoFiles = req.files.photos;
+
+    console.log(`Processing ${photoFiles.length} photos to sketch...`);
+
+    // Process all images in parallel
+    const results = await Promise.allSettled(
+      photoFiles.map(async (photoFile) => {
+        const refPart = bufferToGenerativePart(refFile.buffer, getMimeType(refFile.originalname));
+        const photoPart = bufferToGenerativePart(photoFile.buffer, getMimeType(photoFile.originalname));
+
+        const model = genAI.getGenerativeModel(modelConfig);
+
+        const prompt = `I'm giving you two images.
+
+IMAGE 1: A reference sketch/illustration style.
+IMAGE 2: A photograph to convert.
+
+Recreate IMAGE 2 faithfully in the exact artistic style of IMAGE 1. 
+
+This is purely a style transfer - reproduce everything in the photo exactly as it appears, just rendered in the sketch/illustration style of the reference. Do not add anything, do not remove anything, do not interpret or modify the content. Just faithfully reproduce the photograph in the reference style.
+
+Generate the image now.`;
+
+        const result = await model.generateContent([prompt, refPart, photoPart]);
+        const response = await result.response;
+
+        let imageData = null;
+        let textResponse = '';
+
+        if (response.candidates && response.candidates[0]) {
+          const parts = response.candidates[0].content.parts;
+          for (const part of parts) {
+            if (part.inlineData) {
+              imageData = {
+                data: part.inlineData.data,
+                mimeType: part.inlineData.mimeType
+              };
+            }
+            if (part.text) {
+              textResponse = part.text;
+            }
+          }
+        }
+
+        return {
+          sourceFilename: photoFile.originalname,
+          image: imageData,
+          text: textResponse
+        };
+      })
+    );
+
+    const processed = results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        return {
+          sourceFilename: photoFiles[index].originalname,
+          error: result.reason?.message || 'Unknown error'
+        };
+      }
+    });
+
+    res.json({
+      success: true,
+      total: photoFiles.length,
+      results: processed
+    });
+
+  } catch (error) {
+    console.error('Photo to sketch error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

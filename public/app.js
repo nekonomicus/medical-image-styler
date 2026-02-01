@@ -2,6 +2,7 @@
 const state = {
   referenceImage: null,
   styleSources: [],
+  sketchSources: [],
   annotationSources: [],
   results: []
 };
@@ -15,13 +16,19 @@ const styleSourcesZone = document.getElementById('style-sources-zone');
 const styleSourcesInput = document.getElementById('style-sources-input');
 const styleSourcesPreview = document.getElementById('style-sources-preview');
 
+const sketchSourcesZone = document.getElementById('sketch-sources-zone');
+const sketchSourcesInput = document.getElementById('sketch-sources-input');
+const sketchSourcesPreview = document.getElementById('sketch-sources-preview');
+
 const annotationSourcesZone = document.getElementById('annotation-sources-zone');
 const annotationSourcesInput = document.getElementById('annotation-sources-input');
 const annotationSourcesPreview = document.getElementById('annotation-sources-preview');
 
 const startStyleTransferBtn = document.getElementById('start-style-transfer');
+const startPhotoToSketchBtn = document.getElementById('start-photo-to-sketch');
 const startAnnotationRemovalBtn = document.getElementById('start-annotation-removal');
 const styleProgress = document.getElementById('style-progress');
+const sketchProgress = document.getElementById('sketch-progress');
 const annotationProgress = document.getElementById('annotation-progress');
 
 const resultsGrid = document.getElementById('results-grid');
@@ -100,6 +107,25 @@ function updateStyleSourcesPreview() {
   }
 }
 
+function updateSketchSourcesPreview() {
+  sketchSourcesPreview.innerHTML = '';
+  if (state.sketchSources.length > 0) {
+    sketchSourcesPreview.classList.add('active');
+    sketchSourcesZone.classList.add('has-files');
+    state.sketchSources.forEach((file, index) => {
+      const item = createPreviewItem(file, () => {
+        state.sketchSources.splice(index, 1);
+        updateSketchSourcesPreview();
+        updateButtons();
+      });
+      sketchSourcesPreview.appendChild(item);
+    });
+  } else {
+    sketchSourcesPreview.classList.remove('active');
+    sketchSourcesZone.classList.remove('has-files');
+  }
+}
+
 function updateAnnotationSourcesPreview() {
   annotationSourcesPreview.innerHTML = '';
   if (state.annotationSources.length > 0) {
@@ -121,6 +147,7 @@ function updateAnnotationSourcesPreview() {
 
 function updateButtons() {
   startStyleTransferBtn.disabled = !state.referenceImage || state.styleSources.length === 0;
+  startPhotoToSketchBtn.disabled = !state.referenceImage || state.sketchSources.length === 0;
   startAnnotationRemovalBtn.disabled = state.annotationSources.length === 0;
   downloadAllBtn.disabled = state.results.length === 0;
 }
@@ -136,12 +163,18 @@ function updateResultsGrid() {
     const card = document.createElement('div');
     card.className = `result-card ${result.error ? 'error' : ''}`;
     
+    const typeLabels = {
+      'style-transfer': 'Style Transfer',
+      'photo-to-sketch': 'Photo to Sketch',
+      'annotation-removal': 'Annotation Removal'
+    };
+    
     if (result.error) {
       card.innerHTML = `
         <div class="error-message">Error: ${result.error}</div>
         <div class="card-info">
           <div class="card-title">${result.sourceFilename}</div>
-          <div class="card-type ${result.type}">${result.type === 'style-transfer' ? 'Style Transfer' : 'Annotation Removal'}</div>
+          <div class="card-type ${result.type}">${typeLabels[result.type] || result.type}</div>
         </div>
       `;
     } else {
@@ -152,7 +185,7 @@ function updateResultsGrid() {
         </div>
         <div class="card-info">
           <div class="card-title">${result.sourceFilename}</div>
-          <div class="card-type ${result.type}">${result.type === 'style-transfer' ? 'Style Transfer' : 'Annotation Removal'}</div>
+          <div class="card-type ${result.type}">${typeLabels[result.type] || result.type}</div>
           <div class="card-actions">
             <button class="btn secondary download-btn" data-index="${index}">Download</button>
             <button class="btn secondary use-for-cleanup-btn" data-index="${index}">Remove Annotations</button>
@@ -197,7 +230,12 @@ function downloadResult(result) {
   const link = document.createElement('a');
   link.href = `data:${result.image.mimeType};base64,${result.image.data}`;
   const ext = result.image.mimeType.split('/')[1] || 'png';
-  const prefix = result.type === 'style-transfer' ? 'styled_' : 'clean_';
+  const prefixes = {
+    'style-transfer': 'styled_',
+    'photo-to-sketch': 'sketch_',
+    'annotation-removal': 'clean_'
+  };
+  const prefix = prefixes[result.type] || '';
   link.download = `${prefix}${result.sourceFilename.replace(/\.[^.]+$/, '')}.${ext}`;
   link.click();
 }
@@ -252,6 +290,12 @@ setupDropZone(referenceZone, referenceInput, (files) => {
 setupDropZone(styleSourcesZone, styleSourcesInput, (files) => {
   state.styleSources.push(...files);
   updateStyleSourcesPreview();
+  updateButtons();
+}, true);
+
+setupDropZone(sketchSourcesZone, sketchSourcesInput, (files) => {
+  state.sketchSources.push(...files);
+  updateSketchSourcesPreview();
   updateButtons();
 }, true);
 
@@ -312,6 +356,56 @@ async function processStyleTransfer() {
   }
 }
 
+async function processPhotoToSketch() {
+  if (!state.referenceImage || state.sketchSources.length === 0) return;
+  
+  startPhotoToSketchBtn.classList.add('loading');
+  startPhotoToSketchBtn.disabled = true;
+  
+  const formData = new FormData();
+  formData.append('reference', state.referenceImage);
+  state.sketchSources.forEach(file => {
+    formData.append('photos', file);
+  });
+  
+  sketchProgress.textContent = `Converting ${state.sketchSources.length} photo(s) to sketch...`;
+  
+  try {
+    const response = await fetch('/api/batch-photo-to-sketch', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      data.results.forEach(result => {
+        state.results.unshift({
+          ...result,
+          type: 'photo-to-sketch'
+        });
+      });
+      updateResultsGrid();
+      updateButtons();
+      
+      const successCount = data.results.filter(r => r.image).length;
+      showToast(`Photo to sketch complete: ${successCount}/${data.total} images processed`, 'success');
+      
+      // Clear sources after successful processing
+      state.sketchSources = [];
+      updateSketchSourcesPreview();
+    } else {
+      showToast(`Error: ${data.error}`, 'error');
+    }
+  } catch (error) {
+    showToast(`Error: ${error.message}`, 'error');
+  } finally {
+    startPhotoToSketchBtn.classList.remove('loading');
+    sketchProgress.textContent = '';
+    updateButtons();
+  }
+}
+
 async function processAnnotationRemoval() {
   if (state.annotationSources.length === 0) return;
   
@@ -363,6 +457,7 @@ async function processAnnotationRemoval() {
 
 // Event listeners
 startStyleTransferBtn.addEventListener('click', processStyleTransfer);
+startPhotoToSketchBtn.addEventListener('click', processPhotoToSketch);
 startAnnotationRemovalBtn.addEventListener('click', processAnnotationRemoval);
 downloadAllBtn.addEventListener('click', downloadAllResults);
 clearResultsBtn.addEventListener('click', () => {

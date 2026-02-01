@@ -65,7 +65,40 @@
     </div>
 
     <div class="workflow-section">
-      <h2>Step 2: Annotation Removal</h2>
+      <h2>Step 2: Photo to Sketch (Faithful)</h2>
+      <p class="section-desc">Convert any photos to sketch style - faithful reproduction, no additions or removals</p>
+      
+      <div class="drop-zones-row">
+        <div class="drop-zone-container flex-1">
+          <h3>Photos to Convert</h3>
+          <p class="zone-desc">Any photos - will be faithfully reproduced in reference style</p>
+          <div class="drop-zone" id="sketch-sources-zone">
+            <div class="drop-content">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p>Drop photos here</p>
+              <span class="or-text">or click to select (multiple)</span>
+            </div>
+            <input type="file" id="sketch-sources-input" accept="image/*" multiple hidden>
+            <div class="preview-container multi" id="sketch-sources-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn primary" id="start-photo-to-sketch" disabled>
+          <span class="btn-text">Convert to Sketch</span>
+          <span class="btn-loading">Processing...</span>
+        </button>
+        <div class="progress-info" id="sketch-progress"></div>
+      </div>
+    </div>
+
+    <div class="workflow-section">
+      <h2>Step 3: Annotation Removal</h2>
       <p class="section-desc">Upload styled images that still have annotations to remove them cleanly</p>
       
       <div class="drop-zones-row">
