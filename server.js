@@ -7,8 +7,12 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// API Key from environment or default
-const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAbpRywSDT7sSNncBp231QSbBucaG9i_D0';
+// API Key from environment variable only (never hardcode)
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+  console.error('GEMINI_API_KEY environment variable is required');
+  process.exit(1);
+}
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Configure multer for memory storage
@@ -28,10 +32,7 @@ const modelConfig = {
   model: 'gemini-3-pro-image-preview',
   generationConfig: {
     temperature: 1,
-    responseModalities: ['image', 'text'],
-    imageConfig: {
-      imageSize: '4K'
-    }
+    responseModalities: ['image', 'text']
   }
 };
 
