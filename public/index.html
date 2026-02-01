@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Image Styler - Gemini 3 Pro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Medical Image Styler</h1>
+      <p class="subtitle">Transform surgical photos into medical book illustrations using Gemini 3 Pro</p>
+    </header>
+
+    <div class="workflow-section">
+      <h2>Step 1: Style Transfer</h2>
+      <p class="section-desc">Upload a reference sketch and surgical photos to convert them into the same illustration style</p>
+      
+      <div class="drop-zones-row">
+        <div class="drop-zone-container">
+          <h3>Reference Image</h3>
+          <p class="zone-desc">Femur with plate pencil sketch</p>
+          <div class="drop-zone" id="reference-zone">
+            <div class="drop-content">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p>Drop reference image here</p>
+              <span class="or-text">or click to select</span>
+            </div>
+            <input type="file" id="reference-input" accept="image/*" hidden>
+            <div class="preview-container" id="reference-preview"></div>
+          </div>
+        </div>
+
+        <div class="drop-zone-container flex-2">
+          <h3>Images to Style</h3>
+          <p class="zone-desc">Surgical technique photos (multiple allowed)</p>
+          <div class="drop-zone" id="style-sources-zone">
+            <div class="drop-content">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p>Drop surgical photos here</p>
+              <span class="or-text">or click to select (multiple)</span>
+            </div>
+            <input type="file" id="style-sources-input" accept="image/*" multiple hidden>
+            <div class="preview-container multi" id="style-sources-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn primary" id="start-style-transfer" disabled>
+          <span class="btn-text">Start Style Transfer</span>
+          <span class="btn-loading">Processing...</span>
+        </button>
+        <div class="progress-info" id="style-progress"></div>
+      </div>
+    </div>
+
+    <div class="workflow-section">
+      <h2>Step 2: Annotation Removal</h2>
+      <p class="section-desc">Upload styled images that still have annotations to remove them cleanly</p>
+      
+      <div class="drop-zones-row">
+        <div class="drop-zone-container flex-1">
+          <h3>Images with Annotations</h3>
+          <p class="zone-desc">Styled images that need annotation cleanup</p>
+          <div class="drop-zone" id="annotation-sources-zone">
+            <div class="drop-content">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p>Drop annotated images here</p>
+              <span class="or-text">or click to select (multiple)</span>
+            </div>
+            <input type="file" id="annotation-sources-input" accept="image/*" multiple hidden>
+            <div class="preview-container multi" id="annotation-sources-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn primary" id="start-annotation-removal" disabled>
+          <span class="btn-text">Remove Annotations</span>
+          <span class="btn-loading">Processing...</span>
+        </button>
+        <div class="progress-info" id="annotation-progress"></div>
+      </div>
+    </div>
+
+    <div class="results-section">
+      <h2>Results</h2>
+      <div class="results-toolbar">
+        <button class="btn secondary" id="download-all" disabled>Download All Results</button>
+        <button class="btn secondary" id="clear-results">Clear Results</button>
+      </div>
+      <div class="results-grid" id="results-grid">
+        <div class="empty-state">
+          <p>Results will appear here after processing</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
